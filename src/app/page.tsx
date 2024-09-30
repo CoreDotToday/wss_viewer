@@ -83,6 +83,7 @@ export default function WebSocketChat() {
   const audioElement = useRef<HTMLAudioElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const filteredMessagesEndRef = useRef<HTMLDivElement>(null);
+  const currentMessageRef = useRef<string>("");
 
   const scrollToBottom = (ref: React.RefObject<HTMLDivElement>) => {
     if (ref.current && autoScroll) {
@@ -114,33 +115,26 @@ export default function WebSocketChat() {
         return newMessages;
       });
 
+      if (message.includes("<SOM>")) {
+        currentMessageRef.current = message.replace("<SOM>", "");
+      } else if (message.includes("<EOM>")) {
+        currentMessageRef.current += message.replace("<EOM>", "");
+        updateStreamMessages(currentMessageRef.current, "assistant");
+        currentMessageRef.current = "";
+      } else {
+        currentMessageRef.current += message;
+      }
+
       try {
         const parsedMessage = JSON.parse(message);
-        if (
-          parsedMessage.event === "on_chat_model_stream" &&
-          parsedMessage.data?.chunk?.content
-        ) {
-          updateStreamMessages(parsedMessage.data.chunk.content, "assistant");
-        } else if (
-          parsedMessage.event === "on_chain_stream" &&
-          parsedMessage.data?.chunk?.messages
-        ) {
-          const content = parsedMessage.data.chunk.messages[0]?.content;
-          const role = parsedMessage.data.chunk.messages[0]?.role;
-          if (content && role) {
-            updateStreamMessages(content, role);
-          }
-        } else if (
-          parsedMessage.status === "voice_ready" &&
-          parsedMessage.voice_url
-        ) {
+        if (parsedMessage.status === "voice_ready" && parsedMessage.voice_url) {
           if (enableVoice) {
             audioQueue.current.push(parsedMessage.voice_url);
             playNextAudio();
           }
         }
       } catch (error) {
-        console.error("Error parsing message:", error);
+        // Not a JSON message, ignore
       }
     };
 
@@ -167,13 +161,7 @@ export default function WebSocketChat() {
 
   const updateStreamMessages = (content: string, role: string) => {
     setStreamMessages((prev) => {
-      const newStreamMessages = [...prev];
-      const lastMessage = newStreamMessages[newStreamMessages.length - 1];
-      if (lastMessage && lastMessage.role === role) {
-        lastMessage.content += content;
-      } else {
-        newStreamMessages.push({ content, role });
-      }
+      const newStreamMessages = [...prev, { content, role }];
       setTimeout(() => scrollToBottom(filteredMessagesEndRef), 0);
       return newStreamMessages;
     });
