@@ -64,8 +64,9 @@ while (presetMessages.length < 10) {
 }
 
 type StreamMessage = {
-  content: string;
-  role: string;
+  status: string;
+  event?: string;
+  content?: string;
 };
 
 export default function WebSocketChat() {
@@ -80,6 +81,7 @@ export default function WebSocketChat() {
   const [autoScroll, setAutoScroll] = useState<boolean>(true);
   const ws = useRef<WebSocket | null>(null);
   const audioQueue = useRef<string[]>([]);
+  const [audioQueueState, setAudioQueueState] = useState<string[]>([]);
   const audioElement = useRef<HTMLAudioElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const filteredMessagesEndRef = useRef<HTMLDivElement>(null);
@@ -115,26 +117,97 @@ export default function WebSocketChat() {
         return newMessages;
       });
 
-      if (message.includes("<SOM>")) {
-        currentMessageRef.current = message.replace("<SOM>", "");
-      } else if (message.includes("<EOM>")) {
-        currentMessageRef.current += message.replace("<EOM>", "");
-        updateStreamMessages(currentMessageRef.current, "assistant");
-        currentMessageRef.current = "";
-      } else {
-        currentMessageRef.current += message;
-      }
-
       try {
         const parsedMessage = JSON.parse(message);
+
+        if (parsedMessage.status === "START") {
+          // Message stream starting
+          currentMessageRef.current = "";
+
+          // Optionally, add a new message to streamMessages indicating a new message has started
+          setStreamMessages((prev) => [
+            ...prev,
+            {
+              status: "in-progress",
+              event: parsedMessage.event,
+              content: "",
+            },
+          ]);
+        }
+
+        if (
+          parsedMessage.event === "on_chat_model_stream" &&
+          parsedMessage.data?.chunk?.content
+        ) {
+          // Append the chunk content to currentMessageRef.current
+          currentMessageRef.current += parsedMessage.data.chunk.content;
+
+          setStreamMessages((prev) => {
+            const newStreamMessages = [...prev];
+            // Check if the last message is the current in-progress message
+            if (
+              newStreamMessages.length > 0 &&
+              newStreamMessages[newStreamMessages.length - 1].status ===
+                "in-progress"
+            ) {
+              // Update the content of the last message
+              newStreamMessages[newStreamMessages.length - 1].content =
+                currentMessageRef.current;
+            } else {
+              // Add a new in-progress message if none exists
+              newStreamMessages.push({
+                status: "in-progress",
+                event: parsedMessage.event,
+                content: currentMessageRef.current,
+              });
+            }
+            setTimeout(() => scrollToBottom(filteredMessagesEndRef), 0);
+            return newStreamMessages;
+          });
+        }
+
+        if (parsedMessage.status === "END") {
+          // Message stream ended
+          // Mark the last message as completed
+          setStreamMessages((prev) => {
+            const newStreamMessages = [...prev];
+            if (
+              newStreamMessages.length > 0 &&
+              newStreamMessages[newStreamMessages.length - 1].status ===
+                "in-progress"
+            ) {
+              newStreamMessages[newStreamMessages.length - 1].status =
+                "completed";
+            }
+            return newStreamMessages;
+          });
+          // Reset current message
+          currentMessageRef.current = "";
+        }
+
+        // Handle other status messages without resetting currentMessageRef.current
+        if (
+          parsedMessage.status &&
+          parsedMessage.status !== "START" &&
+          parsedMessage.status !== "END"
+        ) {
+          // Add the new status message to streamMessages
+          const newStreamMessage: StreamMessage = {
+            status: parsedMessage.status,
+          };
+          setStreamMessages((prev) => [...prev, newStreamMessage]);
+          setTimeout(() => scrollToBottom(filteredMessagesEndRef), 0);
+        }
+
         if (parsedMessage.status === "voice_ready" && parsedMessage.voice_url) {
           if (enableVoice) {
             audioQueue.current.push(parsedMessage.voice_url);
+            setAudioQueueState([...audioQueue.current]); // Update the UI state
             playNextAudio();
           }
         }
       } catch (error) {
-        // Not a JSON message, ignore
+        console.error("Error parsing message:", error);
       }
     };
 
@@ -157,14 +230,6 @@ export default function WebSocketChat() {
         variant: "destructive",
       });
     };
-  };
-
-  const updateStreamMessages = (content: string, role: string) => {
-    setStreamMessages((prev) => {
-      const newStreamMessages = [...prev, { content, role }];
-      setTimeout(() => scrollToBottom(filteredMessagesEndRef), 0);
-      return newStreamMessages;
-    });
   };
 
   const disconnectWebSocket = () => {
@@ -196,8 +261,9 @@ export default function WebSocketChat() {
   };
 
   const playNextAudio = () => {
-    if (audioQueue.current.length > 0 && !audioElement.current?.src) {
+    if (audioQueue.current.length > 0 && !audioElement.current) {
       const nextAudioUrl = audioQueue.current.shift();
+      setAudioQueueState([...audioQueue.current]); // Update the UI state
       if (nextAudioUrl) {
         audioElement.current = new Audio(nextAudioUrl);
         audioElement.current.onended = () => {
@@ -218,6 +284,19 @@ export default function WebSocketChat() {
     });
   };
 
+  const clearAudioQueue = () => {
+    audioQueue.current = [];
+    setAudioQueueState([]);
+    if (audioElement.current) {
+      audioElement.current.pause();
+      audioElement.current = null;
+    }
+    toast({
+      title: "Audio Queue Cleared",
+      description: "All audio files have been removed from the queue",
+    });
+  };
+
   useEffect(() => {
     return () => {
       if (ws.current) {
@@ -225,6 +304,19 @@ export default function WebSocketChat() {
       }
     };
   }, []);
+
+  // Auto-scroll when messages change
+  useEffect(() => {
+    if (autoScroll) {
+      scrollToBottom(messagesEndRef);
+    }
+  }, [messages, autoScroll]);
+
+  useEffect(() => {
+    if (autoScroll) {
+      scrollToBottom(filteredMessagesEndRef);
+    }
+  }, [streamMessages, autoScroll]);
 
   return (
     <div className="flex flex-col h-screen p-4 bg-background">
@@ -309,7 +401,18 @@ export default function WebSocketChat() {
             <ScrollArea className="h-full border rounded-md p-4 bg-secondary">
               {streamMessages.map((msg, index) => (
                 <div key={index} className="mb-2">
-                  <strong>{msg.role}:</strong> {msg.content}
+                  {msg.status && msg.status !== "completed" && (
+                    <>
+                      <strong>Status:</strong> {msg.status}
+                    </>
+                  )}
+                  <div>
+                    {msg.content !== undefined && (
+                      <span style={{ whiteSpace: "pre-wrap" }}>
+                        {msg.content}
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
               <div ref={filteredMessagesEndRef} />
@@ -365,6 +468,24 @@ export default function WebSocketChat() {
             </Button>
           ))}
         </div>
+      </div>
+      {/* Audio Queue UI */}
+      <div className="mt-4">
+        <h2 className="text-xl font-bold mb-2">Audio Queue</h2>
+        {audioQueueState.length > 0 ? (
+          <ul className="list-disc list-inside">
+            {audioQueueState.map((url, index) => (
+              <li key={index}>{url}</li>
+            ))}
+          </ul>
+        ) : (
+          <p>No audio in queue.</p>
+        )}
+        {audioQueueState.length > 0 && (
+          <Button variant="outline" onClick={clearAudioQueue} className="mt-2">
+            Clear Audio Queue
+          </Button>
+        )}
       </div>
     </div>
   );
