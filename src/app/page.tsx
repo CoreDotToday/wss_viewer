@@ -28,40 +28,209 @@ type PresetMessage = {
 
 const presetMessages: PresetMessage[] = [
   {
-    label: "Status",
+    label: "상태 조회",
     content: JSON.stringify({ action: "status" }, null, 2),
   },
   {
-    label: "Sample 1",
+    label: "기본 메시지",
     content: JSON.stringify(
       {
         action: "sendmsg",
-        room_uid: "51VPKp3F0yP3",
-        api_key: "33b52d9512873d194f2",
-        msg: "안녕 반가워요",
-        userid: "abc",
+        model: "gpt-4o-mini",
+        room_uid: "3n9X1rcld22t",
+        filename: "A.png",
+        user_id: "user_123",
+        questioner: "고객",
+        visitor_name: "김철수",
+        msg: "안녕하세요? Sample 1 메시지입니다.",
+        api_key: "API 키",
+        return_voice: 0,
       },
       null,
       2
     ),
   },
-  // Add more preset messages here...
-];
-
-// Fill up to 10 preset messages
-while (presetMessages.length < 10) {
-  presetMessages.push({
-    label: `Sample ${presetMessages.length + 1}`,
+  {
+    label: "전체 메시지",
     content: JSON.stringify(
       {
-        action: "sample",
-        id: presetMessages.length + 1,
+        action: "sendmsg",
+        model: "gpt-4o",
+        room_uid: "4b2T9kcpv88j",
+        filename: "B.png",
+        user_id: "user_456",
+        questioner: "고객",
+        visitor_name: "이영희",
+        msg: "안녕하세요? Sample 2 메시지입니다.",
+        api_key: "API 키",
+        return_voice: 1,
+        scene_number: 1,
+        stream: 1,
+        no_save: 1,
+        no_history: 1,
       },
       null,
       2
     ),
-  });
-}
+  },
+  {
+    label: "Completion 테스트",
+    content: JSON.stringify(
+      {
+        action: "sendmsg",
+        model: "gpt-4o",
+        room_uid: "6x9V2jsld98h",
+        user_id: "user_789",
+        questioner: "고객",
+        visitor_name: "박지민",
+        msg: "안녕하세요? Sample 3 메시지입니다.",
+        api_key: "API 키",
+        return_voice: 1,
+        stream: 0,
+      },
+      null,
+      2
+    ),
+  },
+  {
+    label: "Sample 4",
+    content: JSON.stringify(
+      {
+        action: "sendmsg",
+        model: "gpt-4o",
+        room_uid: "9u1V8pld33b",
+        filename: "D.png",
+        user_id: "user_101",
+        questioner: "고객",
+        visitor_name: "정호석",
+        msg: "안녕하세요? Sample 4 메시지입니다.",
+        api_key: "API 키",
+        return_voice: 0,
+        scene_number: 3,
+        stream: 1,
+        no_save: 1,
+        no_history: 0,
+      },
+      null,
+      2
+    ),
+  },
+  {
+    label: "Sample 5",
+    content: JSON.stringify(
+      {
+        action: "sendmsg",
+        model: "gpt-4o",
+        room_uid: "2b7V9kln66p",
+        filename: "E.png",
+        user_id: "user_202",
+        questioner: "고객",
+        visitor_name: "손흥민",
+        msg: "안녕하세요? Sample 5 메시지입니다.",
+        api_key: "API 키",
+        return_voice: 1,
+        scene_number: 4,
+        stream: 0,
+        no_save: 1,
+        no_history: 1,
+      },
+      null,
+      2
+    ),
+  },
+  {
+    label: "Sample 6",
+    content: JSON.stringify(
+      {
+        action: "sendmsg",
+        model: "gpt-4o",
+        room_uid: "2b7V9kln66p",
+        filename: "E.png",
+        user_id: "user_202",
+        questioner: "고객",
+        visitor_name: "손흥민",
+        msg: "안녕하세요? Sample 5 메시지입니다.",
+        api_key: "API 키",
+        return_voice: 1,
+        scene_number: 4,
+        stream: 0,
+        no_save: 1,
+        no_history: 1,
+      },
+      null,
+      2
+    ),
+  },
+  {
+    label: "Sample 7",
+    content: JSON.stringify(
+      {
+        action: "sendmsg",
+        model: "gpt-4o",
+        room_uid: "2b7V9kln66p",
+        filename: "E.png",
+        user_id: "user_202",
+        questioner: "고객",
+        visitor_name: "손흥민",
+        msg: "안녕하세요? Sample 5 메시지입니다.",
+        api_key: "API 키",
+        return_voice: 1,
+        scene_number: 4,
+        stream: 0,
+        no_save: 1,
+        no_history: 1,
+      },
+      null,
+      2
+    ),
+  },
+  {
+    label: "Sample 8",
+    content: JSON.stringify(
+      {
+        action: "sendmsg",
+        model: "gpt-4o",
+        room_uid: "2b7V9kln66p",
+        filename: "E.png",
+        user_id: "user_202",
+        questioner: "고객",
+        visitor_name: "손흥민",
+        msg: "안녕하세요? Sample 5 메시지입니다.",
+        api_key: "API 키",
+        return_voice: 1,
+        scene_number: 4,
+        stream: 0,
+        no_save: 1,
+        no_history: 1,
+      },
+      null,
+      2
+    ),
+  },
+  {
+    label: "Sample 9",
+    content: JSON.stringify(
+      {
+        action: "sendmsg",
+        model: "gpt-4o",
+        room_uid: "2b7V9kln66p",
+        filename: "E.png",
+        user_id: "user_202",
+        questioner: "고객",
+        visitor_name: "손흥민",
+        msg: "안녕하세요? Sample 5 메시지입니다.",
+        api_key: "API 키",
+        return_voice: 1,
+        scene_number: 4,
+        stream: 0,
+        no_save: 1,
+        no_history: 1,
+      },
+      null,
+      2
+    ),
+  },
+];
 
 type StreamMessage = {
   status: string;
