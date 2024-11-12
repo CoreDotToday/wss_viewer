@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { ChatInterface } from "@/components/ChatInterface";
+import { MessagePanel } from "@/components/MessagePanel";
+import { AudioQueue } from "@/components/AudioQueue";
+import { WebSocketMessage } from "@/types/websocket";
+import { useAudioPlayer } from "@/hooks/useAudioPlayer";
+import { useMessages } from "@/hooks/useMessages";
 
 type PresetMessage = {
   label: string;
@@ -267,12 +274,19 @@ export default function WebSocketChat() {
     (message: string) => {
       try {
         const parsedMessage = JSON.parse(message) as WebSocketMessage;
-        handleWebSocketMessage(parsedMessage, (voiceMessage) => {
-          if (settings.enableVoice && voiceMessage.url && voiceMessage.length) {
-            console.log("음성 재생 시도:", voiceMessage);
-            addToQueue(voiceMessage.url, voiceMessage.length);
+        handleWebSocketMessage(
+          parsedMessage,
+          (voiceMessage: { url: any; length: any }) => {
+            if (
+              settings.enableVoice &&
+              voiceMessage.url &&
+              voiceMessage.length
+            ) {
+              console.log("음성 재생 시도:", voiceMessage);
+              addToQueue(voiceMessage.url, voiceMessage.length);
+            }
           }
-        });
+        );
       } catch (error) {
         console.error("메시지 파싱 에러:", error);
       }
