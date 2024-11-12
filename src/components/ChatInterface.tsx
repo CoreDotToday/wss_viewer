@@ -25,7 +25,9 @@ export function ChatInterface({
   settings,
   onSettingsChange,
 }: ChatInterfaceProps) {
-  const [url, setUrl] = useState("ws://localhost:8080");
+  const [url, setUrl] = useState(
+    "wss://ws.api.chldo.com/v4/?room_uid=GnF0K9GiYXlH&user_uid=demo"
+  );
   const [message, setMessage] = useState("");
 
   return (
